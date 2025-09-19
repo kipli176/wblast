@@ -111,8 +111,8 @@ async function start() {
       console.log('✅ WhatsApp connected!')
       // Ambil kontak
       try {
-        contacts = await sock?.store?.contacts || {}
-        broadcast({ type: 'contacts', contacts })
+        contacts = store.contacts
+        broadcast({ type: 'contacts', contacts }) 
       } catch (err) {
         console.error('Gagal ambil kontak:', err)
       }
