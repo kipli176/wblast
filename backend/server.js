@@ -63,27 +63,25 @@ function appendLog(entry) {
 
 // === Personalize pesan dengan nama kontak ===
 async function personalizeMessage(jid, message) {
-  // default nomor
-  let name = jidNormalizedUser(jid).split('@')[0]
+  let name = jidNormalizedUser(jid).split('@')[0] // default nomor
 
   try {
-    // 1. coba ambil pushName langsung dari socket (biasanya ada)
+    // 1. pakai pushName (notify) kalau ada
     if (sock.contacts?.[jid]?.notify) {
       name = sock.contacts[jid].notify
     }
-
-    // 2. kalau tidak ada, coba ambil dari store.contacts
+    // 2. kalau ada name dari kontak
     else if (store.contacts[jid]?.name) {
       name = store.contacts[jid].name
     }
-
-    // 3. fallback tetap nomor
+    // 3. fallback nomor
   } catch (err) {
     console.error("Gagal ambil nama WA:", err)
   }
 
   return message.replace(/\{name\}/g, name)
 }
+
 
 
 
@@ -115,7 +113,8 @@ async function start() {
       if (shouldReconnect) start()
     } else if (connection === 'open') {
       isConnected = true
-      broadcast({ type: 'status', status: 'connected' })
+      broadcast({ type: 'status', status: 'connected' })  
+      broadcast({ type: "contacts", contacts: sock.contacts })
       console.log('✅ WhatsApp connected!')
       // Ambil kontak
       try {
