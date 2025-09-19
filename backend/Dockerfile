@@ -6,7 +6,8 @@ WORKDIR /usr/src/app
 RUN apk add --no-cache git
 
 # Install package langsung tanpa package.json
-RUN npm install express ws qrcode @whiskeysockets/baileys@6.7.18
+RUN npm init -y \
+  && npm install @whiskeysockets/baileys@6.7.18 express ws qrcode 
 
 # Copy source code
 COPY . .
