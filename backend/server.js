@@ -1,4 +1,4 @@
-import * as baileys from '@whiskeysockets/baileys'
+import baileysPkg from '@whiskeysockets/baileys';
 import express from 'express'
 import { WebSocketServer } from 'ws'
 import qrcode from 'qrcode'
@@ -6,11 +6,19 @@ import fs from 'fs'
 import path from 'path' 
 import { fileURLToPath } from "url";
 
+const {
+  makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  Browsers,
+  makeInMemoryStore,
+  jidNormalizedUser
+} = baileysPkg;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = baileys
-
+ 
+const store = makeInMemoryStore({});
 const app = express()
 app.use(express.json())
 
@@ -55,26 +63,21 @@ function appendLog(entry) {
 
 // === Personalize pesan dengan nama kontak ===
 async function personalizeMessage(jid, message) {
-  let name = jid.split('@')[0] // default nomor
+  let name = jidNormalizedUser(jid).split('@')[0]; // default nomor
 
   try {
-    // 1. cek di contacts cache
-    if (contacts[jid]?.name) {
-      name = contacts[jid].name
-    } else {
-      // 2. cek lewat onWhatsApp untuk ambil pushName
-      const result = await sock.onWhatsApp(jid)
-      if (result && result[0]?.notify) {
-        name = result[0].notify
-        contacts[jid] = { id: jid, name }
-      }
+    if (store.contacts[jid]?.name) {
+      name = store.contacts[jid].name;
+    } else if (store.contacts[jid]?.notify) {
+      name = store.contacts[jid].notify;
     }
   } catch (err) {
-    console.error("Gagal ambil nama WA:", err)
+    console.error("Gagal ambil nama WA:", err);
   }
 
-  return message.replace(/\{name\}/g, name)
+  return message.replace(/\{name\}/g, name);
 }
+
 
 
 // === Start Baileys ===
@@ -86,6 +89,7 @@ async function start() {
     printQRInTerminal: true,
     browser: Browsers.ubuntu('BaileysDocker')
   })
+  store.bind(sock.ev);
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update
@@ -232,8 +236,9 @@ app.get('/logs', (req, res) => {
 
 // API untuk kontak
 app.get('/contacts', (req, res) => {
-  res.json({ status: 'ok', contacts })
-})
+  res.json({ status: 'ok', contacts: store.contacts });
+});
+
 
 // === Start server & WS ===
 const server = app.listen(3000, () => console.log('🚀 API ready on http://localhost:3000'))
