@@ -3,7 +3,7 @@ FROM node:20-alpine
 WORKDIR /usr/src/app
 
 # Install build dependencies (untuk native modules)
-# RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache git
 
 # Install package langsung tanpa package.json
 RUN npm install express ws qrcode @whiskeysockets/baileys@6.7.18
