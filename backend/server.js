@@ -3,7 +3,11 @@ import express from 'express'
 import { WebSocketServer } from 'ws'
 import qrcode from 'qrcode'
 import fs from 'fs'
-import path from 'path'
+import path from 'path' 
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = baileys
 
@@ -213,6 +217,14 @@ app.get('/contacts', (req, res) => {
 
 // === Start server & WS ===
 const server = app.listen(3000, () => console.log('🚀 API ready on http://localhost:3000'))
+
+// Serve frontend folder
+app.use(express.static(path.join(__dirname, "../frontend")));
+// Default ke wa-blast.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/wa-blast.html"));
+});
+
 wss = new WebSocketServer({ server })
 wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'status', status: isConnected ? 'connected' : 'disconnected' }))
