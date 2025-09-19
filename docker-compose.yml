@@ -1,17 +1,19 @@
-networks:
-  cloudflared:
-    external: true
-
 services:
   wblast:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: wblast
-    restart: always
+    restart: unless-stopped
     networks:
       - cloudflared
     volumes: 
       - ./:/usr/src/app
       - /usr/src/app/node_modules
     command: ["node", "server.js"]
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+networks:
+  cloudflared:
+    external: true
