@@ -1,12 +1,12 @@
-FROM node:20-slim
+FROM node:20-alpine
 
-# Set workdir
 WORKDIR /usr/src/app
 
+# Install build dependencies (untuk native modules)
 # RUN apk add --no-cache python3 make g++
-# Install dependencies
-COPY package*.json ./
-RUN  npm init -y && npm install
+
+# Install package langsung tanpa package.json
+RUN npm install express ws qrcode @whiskeysockets/baileys@6.7.18
 
 # Copy source code
 COPY . .
