@@ -39,23 +39,43 @@ function appendLog(entry) {
   let logs = []
   try {
     if (fs.existsSync(logFile)) {
-      logs = JSON.parse(fs.readFileSync(logFile, 'utf-8'))
+      const content = fs.readFileSync(logFile, 'utf-8')
+      if (content.trim().length > 0) {
+        logs = JSON.parse(content)
+      }
     }
   } catch (err) {
-    console.error('Error reading log file:', err)
+    console.error('Error reading log file, resetting file:', err)
+    logs = []
   }
   logs.push(entry)
   fs.writeFileSync(logFile, JSON.stringify(logs, null, 2))
 }
 
+
 // === Personalize pesan dengan nama kontak ===
 async function personalizeMessage(jid, message) {
   let name = jid.split('@')[0] // default nomor
-  if (contacts[jid]?.name) {
-    name = contacts[jid].name
+
+  try {
+    // 1. cek di contacts cache
+    if (contacts[jid]?.name) {
+      name = contacts[jid].name
+    } else {
+      // 2. cek lewat onWhatsApp untuk ambil pushName
+      const result = await sock.onWhatsApp(jid)
+      if (result && result[0]?.notify) {
+        name = result[0].notify
+        contacts[jid] = { id: jid, name }
+      }
+    }
+  } catch (err) {
+    console.error("Gagal ambil nama WA:", err)
   }
+
   return message.replace(/\{name\}/g, name)
 }
+
 
 // === Start Baileys ===
 async function start() {
