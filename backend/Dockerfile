@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 # Install build dependencies (untuk native modules)
 RUN apk add --no-cache git
 
+COPY package*.json ./
 # Install package langsung tanpa package.json
 RUN npm install  
 
