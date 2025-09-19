@@ -289,14 +289,6 @@ function loadContacts() {
   });
 }
 
-// update via WebSocket
-if (data.type==="contacts") {
-  $("#contact-select").empty();
-  Object.values(data.contacts).forEach(c=>{
-    const num = c.id.split('@')[0];
-    $("#contact-select").append(`<option value="${num}">${c.name || num}</option>`);
-  });
-}
 
     // Gather numbers
     function gatherNumbers() {
@@ -353,6 +345,14 @@ if (data.type==="contacts") {
             }
           }
           if (data.type==="qr"){ $("#qr-panel").removeClass("hidden"); $("#qr-img").attr("src", data.qr); }
+// update via WebSocket
+if (data.type==="contacts") {
+  $("#contact-select").empty();
+  Object.values(data.contacts).forEach(c=>{
+    const num = c.id.split('@')[0];
+    $("#contact-select").append(`<option value="${num}">${c.name || num}</option>`);
+  });
+}
           if (data.type==="log"){ log(data.msg); }
         } catch(e){ console.error(e); }
       }
