@@ -1,12 +1,12 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 # Set workdir
 WORKDIR /usr/src/app
 
-RUN apk add --no-cache python3 make g++
+# RUN apk add --no-cache python3 make g++
 # Install dependencies
 COPY package*.json ./
-RUN npm install --production
+RUN  npm init -y && npm install
 
 # Copy source code
 COPY . .
