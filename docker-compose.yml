@@ -10,7 +10,7 @@ services:
     volumes: 
       - ./:/usr/src/app
       - /usr/src/app/node_modules
-    command: ["node", "server.js"]
+    command: ["node", "backend/server.js"]
     dns:
       - 8.8.8.8
       - 1.1.1.1
