@@ -4,11 +4,14 @@ networks:
 
 services:
   wblast:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: wblast
     restart: always
     networks:
       - cloudflared
     volumes: 
       - ./:/usr/src/app
+      - /usr/src/app/node_modules
     command: ["node", "server.js"]
