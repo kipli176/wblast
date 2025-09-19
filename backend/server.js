@@ -63,20 +63,28 @@ function appendLog(entry) {
 
 // === Personalize pesan dengan nama kontak ===
 async function personalizeMessage(jid, message) {
-  let name = jidNormalizedUser(jid).split('@')[0]; // default nomor
+  // default nomor
+  let name = jidNormalizedUser(jid).split('@')[0]
 
   try {
-    if (store.contacts[jid]?.name) {
-      name = store.contacts[jid].name;
-    } else if (store.contacts[jid]?.notify) {
-      name = store.contacts[jid].notify;
+    // 1. coba ambil pushName langsung dari socket (biasanya ada)
+    if (sock.contacts?.[jid]?.notify) {
+      name = sock.contacts[jid].notify
     }
+
+    // 2. kalau tidak ada, coba ambil dari store.contacts
+    else if (store.contacts[jid]?.name) {
+      name = store.contacts[jid].name
+    }
+
+    // 3. fallback tetap nomor
   } catch (err) {
-    console.error("Gagal ambil nama WA:", err);
+    console.error("Gagal ambil nama WA:", err)
   }
 
-  return message.replace(/\{name\}/g, name);
+  return message.replace(/\{name\}/g, name)
 }
+
 
 
 
@@ -119,12 +127,22 @@ async function start() {
     }
   })
 
-  sock.ev.on('contacts.update', (updates) => {
-    updates.forEach((u) => {
-      if (u.id) contacts[u.id] = { id: u.id, name: u.notify || u.name || u.id }
-    })
-    broadcast({ type: 'contacts', contacts })
-  })
+sock.ev.on("contacts.update", (updates) => {
+  for (const c of updates) {
+    const id = jidNormalizedUser(c.id)
+    if (!id) continue
+
+    // merge update ke kontak yang ada
+    sock.contacts[id] = {
+      ...(sock.contacts[id] || {}),
+      ...c
+    }
+  }
+
+  // broadcast ulang daftar kontak biar frontend refresh
+  broadcast({ type: "contacts", contacts: sock.contacts })
+})
+
 
   sock.ev.on('creds.update', saveCreds)
 }
