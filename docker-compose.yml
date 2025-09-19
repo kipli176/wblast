@@ -1,0 +1,14 @@
+networks:
+  cloudflared:
+    external: true
+
+services:
+  wblast:
+    build: ./backend
+    container_name: wblast
+    restart: always
+    networks:
+      - cloudflared
+    volumes: 
+      - ./:/usr/src/app
+    command: ["node", "server.js"]
