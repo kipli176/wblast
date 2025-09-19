@@ -1,19 +1,21 @@
-import baileysPkg from '@whiskeysockets/baileys';
+import {
+  makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  Browsers,
+  jidNormalizedUser
+} from '@whiskeysockets/baileys'
+
+// Import store (kontak & chat memory) dari subpath
+import { makeInMemoryStore } from '@whiskeysockets/baileys/store/index.js'
+
 import express from 'express'
 import { WebSocketServer } from 'ws'
 import qrcode from 'qrcode'
 import fs from 'fs'
 import path from 'path' 
 import { fileURLToPath } from "url";
-
-const {
-  makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  Browsers,
-  makeInMemoryStore,
-  jidNormalizedUser
-} = baileysPkg;
+ 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,24 +65,27 @@ function appendLog(entry) {
 
 // === Personalize pesan dengan nama kontak ===
 async function personalizeMessage(jid, message) {
-  let name = jidNormalizedUser(jid).split('@')[0] // default nomor
+  // default: nomor
+  let name = jidNormalizedUser(jid).split('@')[0]
 
   try {
-    // 1. pakai pushName (notify) kalau ada
-    if (sock.contacts?.[jid]?.notify) {
+    // 1. prioritas pushName (notify)
+    if (sock?.contacts?.[jid]?.notify) {
       name = sock.contacts[jid].notify
     }
-    // 2. kalau ada name dari kontak
-    else if (store.contacts[jid]?.name) {
+    // 2. fallback ke kontak dari store
+    else if (store?.contacts?.[jid]?.name) {
       name = store.contacts[jid].name
     }
-    // 3. fallback nomor
+    // 3. tetap nomor kalau semua kosong
   } catch (err) {
     console.error("Gagal ambil nama WA:", err)
   }
 
-  return message.replace(/\{name\}/g, name)
+  // pastikan message selalu string
+  return String(message).replace(/\{name\}/g, name)
 }
+
 
 
 
