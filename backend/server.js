@@ -1,19 +1,19 @@
-import {
-  makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  Browsers,
-  makeInMemoryStore,
-  jidNormalizedUser
-} from '@whiskeysockets/baileys'
-
+import baileysPkg from '@whiskeysockets/baileys';
 import express from 'express'
 import { WebSocketServer } from 'ws'
 import qrcode from 'qrcode'
 import fs from 'fs'
 import path from 'path' 
 import { fileURLToPath } from "url";
- 
+
+const {
+  makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  Browsers,
+  makeInMemoryStore,
+  jidNormalizedUser
+} = baileysPkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
