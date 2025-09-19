@@ -1,26 +1,16 @@
-import {
-  makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  Browsers,
-  jidNormalizedUser
-} from '@whiskeysockets/baileys'
-
-// Import store (kontak & chat memory) dari subpath
-import { makeInMemoryStore } from '@whiskeysockets/baileys/store/index.js'
-
+import * as baileys from '@whiskeysockets/baileys'
 import express from 'express'
 import { WebSocketServer } from 'ws'
 import qrcode from 'qrcode'
 import fs from 'fs'
 import path from 'path' 
 import { fileURLToPath } from "url";
- 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
- 
-const store = makeInMemoryStore({});
+
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = baileys
+
 const app = express()
 app.use(express.json())
 
@@ -65,30 +55,26 @@ function appendLog(entry) {
 
 // === Personalize pesan dengan nama kontak ===
 async function personalizeMessage(jid, message) {
-  // default: nomor
-  let name = jidNormalizedUser(jid).split('@')[0]
+  let name = jid.split('@')[0] // default nomor
 
   try {
-    // 1. prioritas pushName (notify)
-    if (sock?.contacts?.[jid]?.notify) {
-      name = sock.contacts[jid].notify
+    // 1. cek di contacts cache
+    if (contacts[jid]?.name) {
+      name = contacts[jid].name
+    } else {
+      // 2. cek lewat onWhatsApp untuk ambil pushName
+      const result = await sock.onWhatsApp(jid)
+      if (result && result[0]?.notify) {
+        name = result[0].notify
+        contacts[jid] = { id: jid, name }
+      }
     }
-    // 2. fallback ke kontak dari store
-    else if (store?.contacts?.[jid]?.name) {
-      name = store.contacts[jid].name
-    }
-    // 3. tetap nomor kalau semua kosong
   } catch (err) {
     console.error("Gagal ambil nama WA:", err)
   }
 
-  // pastikan message selalu string
-  return String(message).replace(/\{name\}/g, name)
+  return message.replace(/\{name\}/g, name)
 }
-
-
-
-
 
 
 // === Start Baileys ===
@@ -100,7 +86,6 @@ async function start() {
     printQRInTerminal: true,
     browser: Browsers.ubuntu('BaileysDocker')
   })
-  store.bind(sock.ev);
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update
@@ -118,35 +103,24 @@ async function start() {
       if (shouldReconnect) start()
     } else if (connection === 'open') {
       isConnected = true
-      broadcast({ type: 'status', status: 'connected' })  
-      broadcast({ type: "contacts", contacts: sock.contacts })
+      broadcast({ type: 'status', status: 'connected' })
       console.log('✅ WhatsApp connected!')
       // Ambil kontak
       try {
-        contacts = store.contacts
-        broadcast({ type: 'contacts', contacts }) 
+        contacts = await sock?.store?.contacts || {}
+        broadcast({ type: 'contacts', contacts })
       } catch (err) {
         console.error('Gagal ambil kontak:', err)
       }
     }
   })
 
-sock.ev.on("contacts.update", (updates) => {
-  for (const c of updates) {
-    const id = jidNormalizedUser(c.id)
-    if (!id) continue
-
-    // merge update ke kontak yang ada
-    sock.contacts[id] = {
-      ...(sock.contacts[id] || {}),
-      ...c
-    }
-  }
-
-  // broadcast ulang daftar kontak biar frontend refresh
-  broadcast({ type: "contacts", contacts: sock.contacts })
-})
-
+  sock.ev.on('contacts.update', (updates) => {
+    updates.forEach((u) => {
+      if (u.id) contacts[u.id] = { id: u.id, name: u.notify || u.name || u.id }
+    })
+    broadcast({ type: 'contacts', contacts })
+  })
 
   sock.ev.on('creds.update', saveCreds)
 }
@@ -258,9 +232,8 @@ app.get('/logs', (req, res) => {
 
 // API untuk kontak
 app.get('/contacts', (req, res) => {
-  res.json({ status: 'ok', contacts: store.contacts });
-});
-
+  res.json({ status: 'ok', contacts })
+})
 
 // === Start server & WS ===
 const server = app.listen(3000, () => console.log('🚀 API ready on http://localhost:3000'))
