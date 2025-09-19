@@ -1,12 +1,13 @@
-FROM node:18
+FROM node:20-alpine
 
+# Set workdir
 WORKDIR /usr/src/app
 
-# Copy package.json dan install deps
+# Install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm install --production
 
-# Copy seluruh source code
+# Copy source code
 COPY . .
 
 EXPOSE 3000
